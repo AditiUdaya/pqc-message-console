@@ -1,0 +1,35 @@
+1)verify connect:
+curl -X POST -H "Content-Type: application/json" \
+-d '{"device_id":"soldier-001"}' \
+http://127.0.0.1:5000/connect
+
+2)verify handshake:
+curl -X POST -H "Content-Type: application/json" \
+-d '{"device_id":"soldier-001"}' \
+http://127.0.0.1:5001/handshake/start
+
+3)verifying client side connection with handshake:
+curl -X POST -H "Content-Type: application/json" \
+-d '{
+  "device_id":"soldier-001",
+  "ciphertext":"xoxoxo"
+}' \
+http://127.0.0.1:5001/handshake/complete
+
+4)verifying the digital signature:
+curl -X POST -H "Content-Type: application/json" \
+-d "{
+  \"message\":\"Hello HQ\",
+  \"signature\":\"<PASTE_FULL_SIGNATURE_HERE>\",
+  \"public_key\":\"<PASTE_FULL_PUBLIC_KEY_HERE>\"
+}" \
+http://127.0.0.1:5002/verify
+
+
+5)verifying the status of the flask backend:
+curl http://127.0.0.1:5003/status
+
+6)verifying if we can send messages 
+curl -X POST -H "Content-Type: application/json" \
+-d '{"message":"Hello HQ"}' \
+http://127.0.0.1:5002/sign
