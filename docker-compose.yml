@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: pqc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - pqc-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pqc-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - FLASK_ENV=development
+    volumes:
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - pqc-network
+    restart: unless-stopped
+
+  hq-console:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pqc-hq-console
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:5000
+    volumes:
+      - ./frontend:/app
+    command: streamlit run hq_console.py --server.address 0.0.0.0
+    depends_on:
+      - backend
+    networks:
+      - pqc-network
+    restart: unless-stopped
+
+  soldier-console:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pqc-soldier-console
+    ports:
+      - "8502:8501"
+    environment:
+      - BACKEND_URL=http://backend:5000
+    volumes:
+      - ./frontend:/app
+    command: streamlit run soldier_console.py --server.address 0.0.0.0
+    depends_on:
+      - backend
+    networks:
+      - pqc-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  pqc-network:
+    driver: bridge
